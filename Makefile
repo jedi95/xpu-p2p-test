@@ -14,9 +14,10 @@ ENV_PREFIX := $(ONEAPI_ENV) && $(if $(MPI_BIN),export I_MPI_ROOT=$(MPI_BIN)/.. &
 
 BINARY := xpu_p2p_test
 
-# oneCCL allreduce binary. Needs a Level Zero enabled oneCCL plus Intel MPI; point
-# VENV at a prefix that ships the headers, libccl and kernels.spv (see README).
-VENV ?= $(HOME)/vllm-install/.venv
+# oneCCL allreduce binary. VENV points at any prefix shipping oneapi/ccl.hpp,
+# libccl and ccl/kernels; setup_venv.sh creates one at ./.venv-ccl. Nothing in
+# this binary imports Python - the prefix is only a container for the libraries.
+VENV ?= $(CURDIR)/.venv-ccl
 CCL_CXX := mpiicpx
 CCL_CXXFLAGS := -fsycl -O2 -std=c++17
 CCL_BINARY := xpu_ccl_allreduce

@@ -4,3 +4,4 @@ xpu_ccl_allreduce
 __pycache__/
 *.pyc
 ze_p2p_probe
+.venv-ccl/

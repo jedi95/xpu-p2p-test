@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Run xpu_ccl_allreduce: one MPI rank per Intel GPU.
 #
-# Environment: oneCCL comes from the vLLM venv (Level Zero enabled build), Intel
-# MPI from /opt/intel/oneapi/mpi, ATL over OFI with the tcp provider.
+# Environment: oneCCL comes from the prefix in VENV (default ./.venv-ccl, created
+# by setup_venv.sh), Intel MPI from /opt/intel/oneapi/mpi, ATL over OFI with the
+# tcp provider.
 # ZE_AFFINITY_MASK is only defaulted to the rank number by the binary, so a
 # caller-supplied mask wins (put every rank on one GPU with ZE_AFFINITY_MASK=0).
 #
@@ -45,7 +46,7 @@ if ! command -v mpiexec >/dev/null 2>&1 && [ -n "$MPI_PREFIX" ]; then
 fi
 export PATH
 
-VENV=${VENV:-$HOME/vllm-install/.venv}
+VENV=${VENV:-$PWD/.venv-ccl}
 NP=${NP:-2}
 MPI_LIB_DIR="${MPI_PREFIX:-/opt/intel/oneapi/mpi/latest}/lib"
 export LD_LIBRARY_PATH="$VENV/lib:$MPI_LIB_DIR:${LD_LIBRARY_PATH:-}"

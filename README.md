@@ -16,22 +16,31 @@ wedged driver path cannot hang the whole run.
 - oneAPI 2026.x toolkit providing `icpx`, SYCL, and the Level Zero headers and
   `ze_loader` library.
 - Intel MPI providing `mpiicpx` and `mpiexec`.
-- A oneCCL build compiled with Level Zero support, for `xpu_ccl_allreduce`.
+- A oneCCL build with Level Zero support, for `xpu_ccl_allreduce`
+  (`./setup_venv.sh` installs one into `./.venv-ccl`).
 - Python 3 for the orchestrator, plus `xpu-smi` and `lspci` for the topology stage.
 
 ## Build
 
 ```
 . /opt/intel/oneapi/setvars.sh --force   # or your toolkit's own env helper
+./setup_venv.sh                          # ./.venv-ccl: oneCCL libs, headers, kernels
 make                                     # builds ./xpu_p2p_test
 make allreduce                           # builds ./xpu_ccl_allreduce
 ```
 
-`make allreduce` links oneCCL from a prefix supplied via `VENV` (it defaults to
-a vLLM virtualenv under `$HOME`); point it at any prefix containing
-`include/oneapi/ccl.hpp`, `lib/libccl.so` and `lib/ccl/kernels`, for example
-`make allreduce VENV=/opt/oneapi-ccl`. Both binaries and all `*.log` files are
-gitignored.
+`setup_venv.sh` installs `oneccl` and `oneccl-devel` from PyPI into `./.venv-ccl`
+and checks the payload (`libccl.so.1`, `include/oneapi/ccl.hpp`,
+`lib/ccl/kernels/kernels.spv`). Those two wheels are the whole Python
+requirement: both binaries are C++ and link libccl directly, so no framework
+(torch, vLLM) is involved and nothing imports Python at run time. To use a
+different oneCCL build, point `VENV` at any prefix holding the same three files:
+
+```
+make allreduce VENV=/opt/intel/oneapi/ccl/2022.2
+```
+
+Both binaries, `.venv-ccl/` and all `*.log` files are gitignored.
 
 ## Running the Level Zero / SYCL tests
 
@@ -95,7 +104,7 @@ the GPU count. `run_allreduce.sh` wires up the toolkit, oneCCL's transport and i
 Overrides:
 
 - `NP` — number of MPI ranks, one per GPU.
-- `VENV` — oneCCL prefix (headers, `libccl`, `kernels.spv`).
+- `VENV` — oneCCL prefix (headers, `libccl`, `kernels.spv`); defaults to `./.venv-ccl`.
 - `TIMEOUT` — seconds before the collective is hard-killed and the ranks
   reaped. **Always set it**: otherwise a deadlock leaves `mpiexec` blocking the shell.
 - `CCL_ATL_TRANSPORT`, `FI_PROVIDER`, `CCL_KERNEL_PATH` — transport and kernel
