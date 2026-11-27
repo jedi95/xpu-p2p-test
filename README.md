@@ -21,10 +21,11 @@ wedged driver path cannot hang the whole run.
 - Python 3 for the orchestrator, plus `xpu-smi` and `lspci` for the topology stage.
 - **IOMMU disabled** on the platform under test. Peer P2P does not work with it
   enabled on these platforms: `intel_iommu=off` (Intel) or `amd_iommu=off` (AMD)
-  together with `iommu=off`, and `pcie_aspm=off pcie_port_pm=off` for sustained
-  peer traffic. Check `cat /proc/cmdline` and `ls /sys/kernel/iommu_groups` (an
-  empty directory means no translation) before reporting a failure — this is not
-  the boot default on every distribution.
+  together with `iommu=off`. We also boot with `pcie_aspm=off pcie_port_pm=off`
+  as standard practice; neither has a measured effect on peer throughput here, so
+  do not treat them as required. Check `cat /proc/cmdline` and
+  `ls /sys/kernel/iommu_groups` (an empty directory means no translation) before
+  reporting a failure — this is not the boot default on every distribution.
 
 ## Build
 
