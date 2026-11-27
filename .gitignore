@@ -1,3 +1,6 @@
 xpu_p2p_test
 xpu_ccl_allreduce
 *.log
+__pycache__/
+*.pyc
+ze_p2p_probe
