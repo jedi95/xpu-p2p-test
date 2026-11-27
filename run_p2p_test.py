@@ -8,8 +8,8 @@ orchestrators. Evaluates P2P support across all GPU pairs in four stages:
 
   1. xpu-smi topology matrix + lspci root-complex/switch ancestry
      (xpu-smi for GPU state; lspci -PP only for the host-bridge layout —
-     on Arc Pro B70 lspci endpoint link speeds are unreliable, but the
-     device ancestry is what determines whether P2P *can* work)
+     lspci endpoint link speeds are unreliable on Arc, while the device
+     ancestry determines whether P2P *can* work)
   2. dmesg P2P refusal check + kernel P2P trust-model assessment
      (consumer Intel RCs refuse P2P and corrupt when forced; AMD Zen+
      blanket-trusts; Intel server GNR host bridges are in the kernel
@@ -67,15 +67,13 @@ def run_cmd(cmd, timeout=30, use_sudo=False):
 
 
 def source_oneapi():
-    """Return a shell prefix that loads the oneAPI env, or "" when this
+    """Return a shell prefix that loads the oneAPI environment, or "" when this
     process already runs inside an initialised oneAPI environment.
 
-    setvars.sh refuses to run twice without --force: it prints its usage text
-    and returns non-zero, so every wrapped command fails with no useful output
-    ("canaccess probe failed"). That is exactly what `make run` used to hit,
-    because the Makefile sources setvars before starting this script. On hosts
-    where setvars.sh is broken (bash 5.3 / Ubuntu 26.04), prefer the opt-in
-    /usr/local/bin/oneapi-env.sh helper.
+    setvars.sh prints its usage text and returns non-zero when it is sourced a
+    second time without --force, which makes every wrapped command fail with no
+    useful output. Skip it when the environment is already initialised, and
+    prefer the opt-in /usr/local/bin/oneapi-env.sh helper where one exists.
     """
     if os.environ.get("ONEAPI_ROOT") and shutil.which("icpx"):
         return ""

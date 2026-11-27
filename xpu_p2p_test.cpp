@@ -5,7 +5,8 @@
 //   canaccess                — zeDeviceCanAccessPeer matrix + SYCL is_peer
 //   transfer SRC DST [MB]    — L0 direct device->device copy + checksum + GB/s
 //   transfer-kernel SRC DST [MB] — SYCL kernel-initiated peer write then peer read
-//   atomic SRC DST           — kernel on SRC atomicAdd's a counter on DST
+//   atomic SRC DST [ITERS]   — kernel on SRC atomicAdd's a counter on DST
+//   atomic-par DEV [ITERS]   — every GPU atomicAdds into one counter concurrently
 //   bandwidth SRC DST        — sized sweep: direct (L0) vs host-staged control
 //   stress                   — all-to-one atomic stress across the full matrix
 //
@@ -184,8 +185,8 @@ static double gbps(size_t bytes, double seconds) {
     return (seconds > 0) ? (double)bytes / seconds / 1e9 : 0.0;
 }
 
-// SYCL enumerates each GPU once per backend (level_zero + opencl on this
-// toolchain). Only the level_zero entries support cross-device P2P —
+// SYCL enumerates each GPU once per backend (level_zero and opencl). Only the
+// level_zero entries support cross-device P2P —
 // kernels/allocations on the opencl aliases of the same hardware page-fault
 // when touching another GPU's memory. Filter to level_zero everywhere.
 static std::vector<sycl::device> l0_gpus() {
@@ -227,8 +228,8 @@ static int cmd_canaccess() {
         }
     }
 
-    // SYCL view is not available on this toolchain (no device::is_peer
-    // extension in DPC++ 2026.1) — zeDeviceCanAccessPeer is authoritative.
+    // DPC++ does not expose device::is_peer here, so zeDeviceCanAccessPeer is
+    // authoritative.
     printf("SYCLDEVICES count=%zu\n",
            sycl::device::get_devices(sycl::info::device_type::gpu).size());
     return 0;
@@ -315,10 +316,10 @@ static int cmd_transfer_kernel(int s, int d, int mb) {
                         [=](sycl::id<1> i) { dstw[i] = 0xEE; }).wait();
 
         // JIT + first-touch warmup: run BOTH phase kernels at full size,
-        // untimed. The first peer access to a page establishes the GPU-VA
-        // peer mapping (a slow driver path); if timed, it contaminates
-        // phase 1 with ~30x inflated latency while phase 2 (already
-        // mapped) looks fast — exactly the asymmetry this was misread as.
+        // untimed. The first peer access to a page establishes the GPU-VA peer
+        // mapping, which is a slow driver path; measured cold it inflates phase
+        // 1 about 30x while phase 2 (already mapped) looks fast, which reads as
+        // a write-vs-read asymmetry that is not there.
         qs.parallel_for(sycl::range<1>(n),
                         [=](sycl::id<1> i) { dstw[i] = src[i]; }).wait();
         qd.parallel_for(sycl::range<1>(n),
@@ -524,8 +525,8 @@ static int cmd_stress(uint32_t per_src) {
     int overall = 0;
 
     try {
-        // Pre-allocate all counters up front (lesson from the ROCm suite:
-        // allocations made after peer-access cycling may not get remapped).
+        // Allocate every counter up front: an allocation made after peer-access
+        // cycling may not be remapped into the peer address space.
         std::vector<unsigned long long *> counters(n, nullptr);
         std::vector<sycl::queue> qs;
         for (uint32_t t = 0; t < n; t++) {

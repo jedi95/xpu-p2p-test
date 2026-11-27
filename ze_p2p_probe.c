@@ -30,7 +30,7 @@ int main(void) {
                p.uuid.id[0], p.vendorId, p.deviceId);
     }
 
-    // self pairs first: explains what a same-GPU (single_card) comm reports
+    // self pairs: what a communicator restricted to one GPU reports
     for (uint32_t i = 0; i < ndev; i++) {
         ze_device_p2p_properties_t pp = {0};
         pp.stype = ZE_STRUCTURE_TYPE_DEVICE_P2P_PROPERTIES;

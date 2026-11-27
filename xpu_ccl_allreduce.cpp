@@ -6,8 +6,8 @@
 // broadcasts its address over MPI; other ranks create_kvs from the address.
 //
 // Port of a CUDA/ROCm p2pmark-style allreduce benchmark to oneCCL.
-// Size sweep brackets the real inference pattern:
-//   decode: ~4 KiB/call (Qwen3.6 H=2048 FP16), 80 calls/step
+// Size sweep brackets a typical inference pattern:
+//   decode: ~4 KiB/call (hidden 2048, FP16), 80 calls/step
 //   prefill chunk T=8192: 32 MiB/call
 //
 // Usage (launched via mpiexec -n N):
@@ -20,9 +20,8 @@
 //
 // Exit codes: 0 = PASS, 1 = FAIL, 2 = usage/env error.
 //
-// Run P2P integrity first (xpu_p2p_test) — oneCCL returning SUCCESS with
-// corrupted data is the known failure mode on platforms where the kernel
-// peer path lies (compute-runtime issue #935).
+// Run xpu_p2p_test first: oneCCL can return SUCCESS with corrupted data when the
+// kernel peer path is not trustworthy (compute-runtime issue #935).
 
 #include <mpi.h>
 
