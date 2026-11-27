@@ -2,7 +2,8 @@
 # Create a Python environment carrying the oneCCL runtime, headers and SYCL
 # kernels that xpu_ccl_allreduce builds and runs against.
 #
-# Installed from PyPI (about 125 MB download, 500 MB on disk):
+# Installed from PyPI (about 150 MB of wheels, roughly 1.8 GB on disk: the oneCCL
+# libraries plus the SYCL runtime and fabric libraries they depend on):
 #   oneccl        lib/libccl.so.1, lib/libccl.so.2, lib/ccl/kernels/kernels.spv
 #   oneccl-devel  include/oneapi/ccl.hpp, lib/libccl.a
 #
