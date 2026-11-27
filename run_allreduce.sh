@@ -49,7 +49,11 @@ export PATH
 VENV=${VENV:-$PWD/.venv-ccl}
 NP=${NP:-2}
 MPI_LIB_DIR="${MPI_PREFIX:-/opt/intel/oneapi/mpi/latest}/lib"
-export LD_LIBRARY_PATH="$VENV/lib:$MPI_LIB_DIR:${LD_LIBRARY_PATH:-}"
+# CCL's OFI ATL dlopens libfabric at init. A per-host helper that omits libfabric
+# leaves it off the loader path, and CCL aborts with
+# "api_wrappers_init: condition (mpi_inited || ofi_inited) failed" and then spins.
+FI_LIB=$(ls -d /opt/intel/oneapi/libfabric/*/lib 2>/dev/null | sort -V | tail -1)
+export LD_LIBRARY_PATH="$VENV/lib:$MPI_LIB_DIR${FI_LIB:+:$FI_LIB}:${LD_LIBRARY_PATH:-}"
 export CCL_ATL_TRANSPORT=${CCL_ATL_TRANSPORT:-ofi}
 export CCL_KERNEL_PATH="${CCL_KERNEL_PATH:-$VENV/lib/ccl/kernels/}"
 export FI_PROVIDER=${FI_PROVIDER:-tcp}
