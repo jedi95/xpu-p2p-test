@@ -59,16 +59,19 @@ if [ "${TIMEOUT:-0}" -gt 0 ] 2>/dev/null; then
     setsid -w bash -c "timeout -k 5 $TIMEOUT mpiexec -n $NP ./xpu_ccl_allreduce \"\$@\"" _ "${ARGS[@]}"
     rc=$?
     # timeout kills mpiexec, but the ranks can survive it (seen on some hosts) and
-    # keep both GPUs pinned at max clock, which poisons every later
-    # measurement. Reap by executable name: the ranks' own cmdline is bare
-    # "./xpu_ccl_allreduce" on some MPI builds, so matching "--sizes-bytes"
-    # misses them.
-    pkill -f "xpu_ccl_allreduce" >/dev/null 2>&1
+    # keep both GPUs pinned at max clock, which poisons every later measurement.
+    # The ranks' own cmdline is bare "./xpu_ccl_allreduce" on some MPI builds, so
+    # matching "--sizes-bytes" misses them. Anchor the pattern at the start of the
+    # command line: an unanchored match also hits every shell that merely mentions
+    # the binary - including the caller of this script - and killing that takes out
+    # the whole invocation.
+    REAP='^[^ ]*xpu_ccl_allreduce'
+    pkill -f "$REAP" >/dev/null 2>&1
     for _ in 1 2 3 4 5; do
-        pgrep -f "xpu_ccl_allreduce" >/dev/null 2>&1 || break
+        pgrep -f "$REAP" >/dev/null 2>&1 || break
         sleep 1
     done
-    pkill -9 -f "xpu_ccl_allreduce" >/dev/null 2>&1
+    pkill -9 -f "$REAP" >/dev/null 2>&1
     exit $rc
 fi
 exec mpiexec -n "$NP" ./xpu_ccl_allreduce "${ARGS[@]}"
